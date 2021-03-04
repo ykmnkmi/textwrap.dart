@@ -1,0 +1,10 @@
+.dart_tool/
+.packages
+doc/api/
+*.aot
+*.dill
+*.jit
+*.js
+*.js.deps
+*.js.map
+pubspec.lock
