@@ -17,7 +17,8 @@ extension PatternUtils on Pattern {
       result.add(text.substring(start, match.start));
 
       if (match.groupCount > 0) {
-        result.addAll(match.groups(List<int>.generate(match.groupCount, (index) => index + 1)));
+        result.addAll(match.groups(
+            List<int>.generate(match.groupCount, (index) => index + 1)));
       }
     }
 

@@ -10,9 +10,18 @@ void main() {
     }
 
     test('simple', () {
-      final text = "Hello there, how are you this fine day?  I'm glad to hear it!";
-      check(wrap(text, width: 12), ['Hello there,', 'how are you', 'this fine', "day?  I'm", 'glad to hear', 'it!']);
-      check(wrap(text, width: 42), ['Hello there, how are you this fine day?', "I'm glad to hear it!"]);
+      final text =
+          "Hello there, how are you this fine day?  I'm glad to hear it!";
+      check(wrap(text, width: 12), [
+        'Hello there,',
+        'how are you',
+        'this fine',
+        "day?  I'm",
+        'glad to hear',
+        'it!'
+      ]);
+      check(wrap(text, width: 42),
+          ['Hello there, how are you this fine day?', "I'm glad to hear it!"]);
       check(wrap(text, width: 80), [text]);
     });
 
@@ -25,7 +34,8 @@ void main() {
     test('empty string with initial indent', () {
       final text = '';
       check(wrap(text, width: 6, initialIndent: '++'), emptyList);
-      check(wrap(text, width: 6, initialIndent: '++', dropWhitespace: false), emptyList);
+      check(wrap(text, width: 6, initialIndent: '++', dropWhitespace: false),
+          emptyList);
     });
 
     test('whitespace', () {

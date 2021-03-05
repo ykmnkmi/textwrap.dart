@@ -16,7 +16,7 @@ List<String> wrap(
   bool breakOnHyphens = true,
   int tabSize = 8,
   int maxLines = -1,
-  String placeholder = ' [...]',
+  String placeholder = ' ...',
 }) {
   final wrapper = TextWrapper(
     width: width,
@@ -49,7 +49,7 @@ String fill(
   bool breakOnHyphens = true,
   int tabSize = 8,
   int maxLines = -1,
-  String placeholder = ' [...]',
+  String placeholder = ' ...',
 }) {
   final wrapper = TextWrapper(
     width: width,
@@ -82,7 +82,7 @@ String shorten(
   bool dropWhitespace = true,
   bool breakOnHyphens = true,
   int tabSize = 8,
-  String placeholder = ' [...]',
+  String placeholder = ' ...',
 }) {
   final wrapper = TextWrapper(
     width: width,
@@ -114,9 +114,10 @@ class TextWrapper {
     this.breakOnHyphens = true,
     this.tabSize = 8,
     this.maxLines = -1,
-    this.placeholder = ' [...]',
+    this.placeholder = ' ...',
   }) {
-    wordSeparatorRe = RegExp('([\t\n\v\r ]+|(?<=[\w!"\'&.,?])-{2,}(?=\w)|[^\t\n\v\r ]+?(?:-(?:(?<=[^\d\W]{2}-)|(?<=[^\d\W]-[^\d\W]-))(?=[^\d\W]-?[^\d\W])|'
+    wordSeparatorRe = RegExp(
+        '([\t\n\v\r ]+|(?<=[\w!"\'&.,?])-{2,}(?=\w)|[^\t\n\v\r ]+?(?:-(?:(?<=[^\d\W]{2}-)|(?<=[^\d\W]-[^\d\W]-))(?=[^\d\W]-?[^\d\W])|'
         '(?=[\t\n\v\r ]|\Z)|(?<=[\w!"\'&.,?])(?=-{2,}\w)))');
     wordSeparatorSimpleRe = RegExp('([\t\n\v\r\ ])+');
     sentenceEndRe = RegExp('[a-z][\.\!\?][\"\']?' /* no \Z (( */);
@@ -159,7 +160,8 @@ class TextWrapper {
     }
 
     if (replaceWhitespace) {
-      text = text.translate(const <int, int>{9: 32, 10: 32, 11: 32, 12: 32, 13: 32});
+      text = text
+          .translate(const <int, int>{9: 32, 10: 32, 11: 32, 12: 32, 13: 32});
     }
 
     return text;
@@ -175,7 +177,10 @@ class TextWrapper {
       chunks = wordSeparatorSimpleRe.split(text);
     }
 
-    return chunks.whereType<String>().where((chunk) => chunk.isNotEmpty).toList();
+    return chunks
+        .whereType<String>()
+        .where((chunk) => chunk.isNotEmpty)
+        .toList();
   }
 
   @protected
@@ -184,7 +189,9 @@ class TextWrapper {
       final chunk = chunks[i];
       final length = chunk.length;
 
-      if (chunks[i + 1] == ' ' && sentenceEndRe.hasMatch(length > 2 ? chunk.substring(length - 2) : chunk)) {
+      if (chunks[i + 1] == ' ' &&
+          sentenceEndRe
+              .hasMatch(length > 2 ? chunk.substring(length - 2) : chunk)) {
         chunks[i + 1] = '  ';
         i += 2;
       } else {
@@ -194,7 +201,8 @@ class TextWrapper {
   }
 
   @protected
-  void handleLongWord(List<String> reversedChunks, List<String> currentLine, int currentLength, int width) {
+  void handleLongWord(List<String> reversedChunks, List<String> currentLine,
+      int currentLength, int width) {
     final spaceLeft = width < 1 ? 1 : width - currentLength;
 
     if (breakLongWords) {
@@ -258,10 +266,13 @@ class TextWrapper {
 
       if (chunks.isNotEmpty && chunks.last.length > width) {
         handleLongWord(chunks, currentLine, currentLength, width);
-        currentLength = currentLine.fold<int>(0, (sum, line) => sum + line.length);
+        currentLength =
+            currentLine.fold<int>(0, (sum, line) => sum + line.length);
       }
 
-      if (dropWhitespace && currentLine.isNotEmpty && currentLine.last.trim().isEmpty) {
+      if (dropWhitespace &&
+          currentLine.isNotEmpty &&
+          currentLine.last.trim().isEmpty) {
         final last = currentLine.removeLast();
         currentLength -= last.length;
       }
@@ -269,13 +280,18 @@ class TextWrapper {
       if (currentLine.isNotEmpty) {
         if (maxLines == -1 ||
             lines.length + 1 < maxLines ||
-            (chunks.isEmpty || dropWhitespace && chunks.length == 1 && chunks.first.trim().isEmpty) && currentLength <= width) {
+            (chunks.isEmpty ||
+                    dropWhitespace &&
+                        chunks.length == 1 &&
+                        chunks.first.trim().isEmpty) &&
+                currentLength <= width) {
           lines.add(indent + currentLine.join());
         } else {
           var not = true;
 
           while (currentLine.isNotEmpty) {
-            if (currentLine.last.trim().isNotEmpty && currentLength + placeholder.length <= width) {
+            if (currentLine.last.trim().isNotEmpty &&
+                currentLength + placeholder.length <= width) {
               currentLine.add(placeholder);
               lines.add(indent + currentLine.join());
               not = false;
