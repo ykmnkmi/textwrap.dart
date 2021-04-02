@@ -102,6 +102,12 @@ String shorten(
 }
 
 class TextWrapper {
+  static RegExp? _wordSeparatorRe;
+
+  static RegExp? _wordSeparatorSimpleRe;
+
+  static RegExp? _sentenceEndRe;
+
   TextWrapper({
     this.width = 70,
     this.initialIndent = '',
@@ -115,13 +121,14 @@ class TextWrapper {
     this.tabSize = 8,
     this.maxLines = -1,
     this.placeholder = ' ...',
-  }) {
-    wordSeparatorRe = RegExp(
-        '([\t\n\v\r ]+|(?<=[\w!"\'&.,?])-{2,}(?=\w)|[^\t\n\v\r ]+?(?:-(?:(?<=[^\d\W]{2}-)|(?<=[^\d\W]-[^\d\W]-))(?=[^\d\W]-?[^\d\W])|'
-        '(?=[\t\n\v\r ]|\Z)|(?<=[\w!"\'&.,?])(?=-{2,}\w)))');
-    wordSeparatorSimpleRe = RegExp('([\t\n\v\r\ ])+');
-    sentenceEndRe = RegExp('[a-z][\.\!\?][\"\']?' /* no \Z (( */);
-  }
+  })  : wordSeparatorRe = _wordSeparatorRe ??= RegExp(
+            '([\t\n\v\r ]+|(?<=[\w!"\'&.,?])-{2,}(?=\w)|[^\t\n\v\r ]+?'
+            '(?:-(?:(?<=[^\d\W]{2}-)|(?<=[^\d\W]-[^\d\W]-))(?=[^\d\W]-?[^\d\W])|'
+            '(?=[\t\n\v\r ]|\Z)|(?<=[\w!"\'&.,?])(?=-{2,}\w)))'),
+        wordSeparatorSimpleRe =
+            _wordSeparatorSimpleRe ??= RegExp('([\t\n\v\r\ ])+'),
+        sentenceEndRe = _sentenceEndRe ??=
+            RegExp('[a-z][\.\!\?][\"\']?' /* no \Z =( */);
 
   final int width;
 
@@ -147,11 +154,11 @@ class TextWrapper {
 
   final String placeholder;
 
-  late RegExp wordSeparatorRe;
+  RegExp wordSeparatorRe;
 
-  late RegExp wordSeparatorSimpleRe;
+  RegExp wordSeparatorSimpleRe;
 
-  late RegExp sentenceEndRe;
+  RegExp sentenceEndRe;
 
   @protected
   String mungeWhitespace(String text) {
