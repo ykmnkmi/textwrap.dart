@@ -1,31 +1,20 @@
 /// Extends [Pattern].
 extension PatternUtils on Pattern {
   /// Split string by the occurrences of pattern.
-  List<String?> split(String text) {
-    final matches = allMatches(text).toList();
+  List<String> split(String text) {
+    final result = <String>[];
+    var lastEnd = 0;
 
-    if (matches.isEmpty) {
-      return <String>[text];
-    }
+    for (final match in allMatches(text)) {
+      result.add(text.substring(lastEnd, match.start));
+      lastEnd = match.end;
 
-    final result = <String?>[];
-    final length = matches.length;
-    Match? match;
-
-    for (var i = 0, start = 0; i < length; i += 1, start = match.end) {
-      match = matches[i];
-      result.add(text.substring(start, match.start));
-
-      if (match.groupCount > 0) {
-        result.addAll(match.groups(
-            List<int>.generate(match.groupCount, (index) => index + 1)));
+      for (var i = 0, len = match.groupCount; i < len; i++) {
+        result.add(match.group(i + 1)!);
       }
     }
 
-    if (match != null) {
-      result.add(text.substring(match.end));
-    }
-
+    result.add(text.substring(lastEnd));
     return result;
   }
 }
