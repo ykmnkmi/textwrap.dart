@@ -1,10 +1,7 @@
 .dart_tool/
+.vscode/
 .packages
-doc/api/
-*.aot
-*.dill
-*.jit
-*.js
-*.js.deps
-*.js.map
+build/
+coverage/
+doc/
 pubspec.lock

@@ -3,100 +3,115 @@ import 'package:meta/meta.dart';
 import 'utils.dart';
 
 /// Wrap a single paragraph of text.
-List<String> wrap(String text,
-    {int width = 70,
-    String initialIndent = '',
-    String subsequentIndent = '',
-    bool expandTabs = true,
-    bool replaceWhitespace = true,
-    bool fixSentenceEndings = false,
-    bool breakLongWords = true,
-    bool dropWhitespace = true,
-    bool breakOnHyphens = true,
-    int tabSize = 8,
-    int maxLines = -1,
-    String placeholder = ' ...'}) {
+List<String> wrap(
+  String text, {
+  int width = 70,
+  String initialIndent = '',
+  String subsequentIndent = '',
+  bool expandTabs = true,
+  bool replaceWhitespace = true,
+  bool fixSentenceEndings = false,
+  bool breakLongWords = true,
+  bool dropWhitespace = true,
+  bool breakOnHyphens = true,
+  int tabSize = 8,
+  int maxLines = -1,
+  String placeholder = ' ...',
+}) {
   var wrapper = TextWrapper(
-      width: width,
-      initialIndent: initialIndent,
-      subsequentIndent: subsequentIndent,
-      expandTabs: expandTabs,
-      replaceWhitespace: replaceWhitespace,
-      fixSentenceEndings: fixSentenceEndings,
-      breakLongWords: breakLongWords,
-      dropWhitespace: dropWhitespace,
-      breakOnHyphens: breakOnHyphens,
-      tabSize: tabSize,
-      maxLines: maxLines,
-      placeholder: placeholder);
+    width: width,
+    initialIndent: initialIndent,
+    subsequentIndent: subsequentIndent,
+    expandTabs: expandTabs,
+    replaceWhitespace: replaceWhitespace,
+    fixSentenceEndings: fixSentenceEndings,
+    breakLongWords: breakLongWords,
+    dropWhitespace: dropWhitespace,
+    breakOnHyphens: breakOnHyphens,
+    tabSize: tabSize,
+    maxLines: maxLines,
+    placeholder: placeholder,
+  );
+
   return wrapper.wrap(text);
 }
 
 /// Fill a single paragraph of text.
-String fill(String text,
-    {int width = 70,
-    String initialIndent = '',
-    String subsequentIndent = '',
-    bool expandTabs = true,
-    bool replaceWhitespace = true,
-    bool fixSentenceEndings = false,
-    bool breakLongWords = true,
-    bool dropWhitespace = true,
-    bool breakOnHyphens = true,
-    int tabSize = 8,
-    int maxLines = -1,
-    String placeholder = ' ...'}) {
+String fill(
+  String text, {
+  int width = 70,
+  String initialIndent = '',
+  String subsequentIndent = '',
+  bool expandTabs = true,
+  bool replaceWhitespace = true,
+  bool fixSentenceEndings = false,
+  bool breakLongWords = true,
+  bool dropWhitespace = true,
+  bool breakOnHyphens = true,
+  int tabSize = 8,
+  int maxLines = -1,
+  String placeholder = ' ...',
+}) {
   var wrapper = TextWrapper(
-      width: width,
-      initialIndent: initialIndent,
-      subsequentIndent: subsequentIndent,
-      expandTabs: expandTabs,
-      replaceWhitespace: replaceWhitespace,
-      fixSentenceEndings: fixSentenceEndings,
-      breakLongWords: breakLongWords,
-      dropWhitespace: dropWhitespace,
-      breakOnHyphens: breakOnHyphens,
-      tabSize: tabSize,
-      maxLines: maxLines,
-      placeholder: placeholder);
+    width: width,
+    initialIndent: initialIndent,
+    subsequentIndent: subsequentIndent,
+    expandTabs: expandTabs,
+    replaceWhitespace: replaceWhitespace,
+    fixSentenceEndings: fixSentenceEndings,
+    breakLongWords: breakLongWords,
+    dropWhitespace: dropWhitespace,
+    breakOnHyphens: breakOnHyphens,
+    tabSize: tabSize,
+    maxLines: maxLines,
+    placeholder: placeholder,
+  );
+
   return wrapper.fill(text);
 }
 
 /// Collapse and truncate the given text to fit in the given width.
-String shorten(String text, int width,
-    {int maxLines = 1,
-    String initialIndent = '',
-    String subsequentIndent = '',
-    bool expandTabs = true,
-    bool replaceWhitespace = true,
-    bool fixSentenceEndings = false,
-    bool breakLongWords = true,
-    bool dropWhitespace = true,
-    bool breakOnHyphens = true,
-    int tabSize = 8,
-    String placeholder = ' ...'}) {
+String shorten(
+  String text,
+  int width, {
+  int maxLines = 1,
+  String initialIndent = '',
+  String subsequentIndent = '',
+  bool expandTabs = true,
+  bool replaceWhitespace = true,
+  bool fixSentenceEndings = false,
+  bool breakLongWords = true,
+  bool dropWhitespace = true,
+  bool breakOnHyphens = true,
+  int tabSize = 8,
+  String placeholder = ' ...',
+}) {
   var wrapper = TextWrapper(
-      width: width,
-      initialIndent: initialIndent,
-      subsequentIndent: subsequentIndent,
-      expandTabs: expandTabs,
-      replaceWhitespace: replaceWhitespace,
-      fixSentenceEndings: fixSentenceEndings,
-      breakLongWords: breakLongWords,
-      dropWhitespace: dropWhitespace,
-      breakOnHyphens: breakOnHyphens,
-      tabSize: tabSize,
-      maxLines: maxLines,
-      placeholder: placeholder);
+    width: width,
+    initialIndent: initialIndent,
+    subsequentIndent: subsequentIndent,
+    expandTabs: expandTabs,
+    replaceWhitespace: replaceWhitespace,
+    fixSentenceEndings: fixSentenceEndings,
+    breakLongWords: breakLongWords,
+    dropWhitespace: dropWhitespace,
+    breakOnHyphens: breakOnHyphens,
+    tabSize: tabSize,
+    maxLines: maxLines,
+    placeholder: placeholder,
+  );
   return wrapper.fill(text.split(RegExp('\\s+')).join(' '));
 }
 
 class TextWrapper {
-  static RegExp? _wordSeparatorRe;
+  static final RegExp _wordSeparatorRe = RegExp(
+      '([\t\n\v\r ]+|(?<=[\\w!"\'&.,?])-{2,}(?=\\w)|[^\t\n\v\r ]+?'
+      '(?:-(?:(?<=[^\\d\\W]{2}-)|(?<=[^\\d\\W]-[^\\d\\W]-))(?=[^\\d\\W]-?[^\\d\\W])|'
+      '(?=[\t\n\v\r ]|\$)|(?<=[\\w!"\'&.,?])(?=-{2,}\\w)))');
 
-  static RegExp? _wordSeparatorSimpleRe;
+  static final RegExp _wordSeparatorSimpleRe = RegExp('([\t\n\v\r ])+');
 
-  static RegExp? _sentenceEndRe;
+  static final RegExp _sentenceEndRe = RegExp('\\w[\\.\\!\\?][\\"\']?\$');
 
   TextWrapper(
       {this.width = 70,
@@ -111,13 +126,9 @@ class TextWrapper {
       this.tabSize = 8,
       this.maxLines = -1,
       this.placeholder = ' ...'})
-      : wordSeparatorRe = _wordSeparatorRe ??= RegExp(
-            '([\t\n\v\r ]+|(?<=[\\w!"\'&.,?])-{2,}(?=\\w)|[^\t\n\v\r ]+?'
-            '(?:-(?:(?<=[^\\d\\W]{2}-)|(?<=[^\\d\\W]-[^\\d\\W]-))(?=[^\\d\\W]-?[^\\d\\W])|'
-            '(?=[\t\n\v\r ]|\$)|(?<=[\\w!"\'&.,?])(?=-{2,}\\w)))'),
-        wordSeparatorSimpleRe =
-            _wordSeparatorSimpleRe ??= RegExp('([\t\n\v\r ])+'),
-        sentenceEndRe = _sentenceEndRe ??= RegExp('\\w[\\.\\!\\?][\\"\']?\$');
+      : wordSeparatorRe = _wordSeparatorRe,
+        wordSeparatorSimpleRe = _wordSeparatorSimpleRe,
+        sentenceEndRe = _sentenceEndRe;
 
   final int width;
 
@@ -156,8 +167,13 @@ class TextWrapper {
     }
 
     if (replaceWhitespace) {
-      const table = <int, int>{9: 32, 10: 32, 11: 32, 12: 32, 13: 32};
-      text = text.translate(table);
+      text = text.translate(const <int, int>{
+        9: 32,
+        10: 32,
+        11: 32,
+        12: 32,
+        13: 32,
+      });
     }
 
     return text;
@@ -193,8 +209,12 @@ class TextWrapper {
   }
 
   @protected
-  void handleLongWord(List<String> reversedChunks, List<String> currentLine,
-      int currentLength, int width) {
+  void handleLongWord(
+    List<String> reversedChunks,
+    List<String> currentLine,
+    int currentLength,
+    int width,
+  ) {
     var spaceLeft = width < 1 ? 1 : width - currentLength;
 
     if (breakLongWords) {
@@ -219,7 +239,7 @@ class TextWrapper {
   @protected
   List<String> wrapChunks(List<String> chunks) {
     if (width < 0) {
-      throw Exception('invalid width $width (must be > 0)');
+      throw Exception('Invalid width $width (must be > 0).');
     }
 
     var lines = <String>[];
@@ -228,7 +248,7 @@ class TextWrapper {
       var indent = maxLines > 1 ? subsequentIndent : initialIndent;
 
       if (indent.length + placeholder.trimLeft().length > width) {
-        throw Exception('placeholder too large for max width');
+        throw Exception('Placeholder too large for max width.');
       }
     }
 

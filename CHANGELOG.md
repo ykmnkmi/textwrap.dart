@@ -1,3 +1,9 @@
+## 1.2.0
+
+- Minimal SDK version: 2.18.0.
+- Refactoring.
+
+
 ## 1.1.0
 
 - `Pattern.split` no empty trailing strings.

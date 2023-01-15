@@ -11,7 +11,7 @@ void main() {
 
     test('simple', () {
       var text = 'Hello there, how are you this fine day?  '
-          'I\'m glad to hear it!';
+          "I'm glad to hear it!";
 
       check(wrap(text, width: 12), [
         'Hello there,',
@@ -24,7 +24,7 @@ void main() {
 
       check(wrap(text, width: 42), [
         'Hello there, how are you this fine day?',
-        'I\'m glad to hear it!',
+        "I'm glad to hear it!",
       ]);
 
       check(wrap(text, width: 80), [
