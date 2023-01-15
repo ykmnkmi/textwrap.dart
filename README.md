@@ -1,3 +1,8 @@
+# textwrap
+
+[![Pub Package][pub_icon]][pub]
+[![Test Status][test_ci_icon]][test_ci]
+
 Text wrapping and filling. It's a pure port of [textwrap][textwrap] from Python.
 
 ## Usage
@@ -18,5 +23,9 @@ void main() {
 
 Please file feature requests and bugs at the [issue tracker][tracker].
 
+[pub_icon]: https://img.shields.io/pub/v/textwrap.svg
+[pub]: https://pub.dev/packages/textwrap
+[test_ci_icon]: https://github.com/ykmnkmi/textwrap.dart/actions/workflows/test.yaml/badge.svg
+[test_ci]: https://github.com/ykmnkmi/textwrap.dart/actions/workflows/test.yaml
 [textwrap]: https://github.com/python/cpython/blob/master/Lib/textwrap.py
 [tracker]: https://github.com/ykmnkmi/textwrap.dart/issues
