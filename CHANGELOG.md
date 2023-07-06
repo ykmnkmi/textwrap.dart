@@ -1,8 +1,12 @@
+## 2.0.0-dev
+
+- Minimal SDK version: 3.0.0.
+- Refactoring.
+
 ## 1.2.0
 
 - Minimal SDK version: 2.18.0.
 - Refactoring.
-
 
 ## 1.1.0
 
@@ -10,12 +14,12 @@
 
 ## 1.0.2
 
-- internal changes.
+- Internal changes.
 
 ## 1.0.1
 
-- update meta & dart format.
+- Update meta.
 
 ## 1.0.0
 
-- initial release.
+- Initial release.
