@@ -1,4 +1,4 @@
-## 2.0.0-dev
+## 2.0.0
 
 - Minimal SDK version: 3.0.0.
 - Refactoring.
