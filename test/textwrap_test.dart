@@ -10,7 +10,8 @@ void main() {
     }
 
     test('simple', () {
-      var text = 'Hello there, how are you this fine day?  '
+      var text =
+          'Hello there, how are you this fine day?  '
           "I'm glad to hear it!";
 
       check(wrap(text, width: 12), [
@@ -27,9 +28,7 @@ void main() {
         "I'm glad to hear it!",
       ]);
 
-      check(wrap(text, width: 80), [
-        text,
-      ]);
+      check(wrap(text, width: 80), [text]);
     });
 
     test('empty string', () {
@@ -39,8 +38,10 @@ void main() {
 
     test('empty string with initial indent', () {
       check(wrap('', width: 6, initialIndent: '++'), emptyList);
-      check(wrap('', width: 6, initialIndent: '++', dropWhitespace: false),
-          emptyList);
+      check(
+        wrap('', width: 6, initialIndent: '++', dropWhitespace: false),
+        emptyList,
+      );
     });
 
     test('whitespace', () {

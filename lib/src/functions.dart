@@ -1,6 +1,18 @@
 import 'package:textwrap/src/extensions.dart';
 import 'package:textwrap/src/patterns.dart';
 
+/// Fixes sentence endings by ensuring proper spacing after sentence terminators.
+///
+/// This function modifies the [chunks] list in-place by converting single spaces
+/// after sentence endings (periods, exclamation marks, question marks) into
+/// double spaces for proper typographic formatting.
+///
+/// Example:
+/// ```dart
+/// final chunks = ['Hello.', ' ', 'World!'];
+/// fixEndings(chunks);
+/// // chunks becomes ['Hello.', '  ', 'World!']
+/// ```
 void fixEndings(List<String> chunks) {
   for (var i = 0; i < chunks.length - 1;) {
     var chunk = chunks[i];
@@ -16,6 +28,11 @@ void fixEndings(List<String> chunks) {
   }
 }
 
+/// Handles words that are longer than the available line width.
+///
+/// This function breaks long words to fit within the current line or moves
+/// them to the next line based on the wrapping configuration. It modifies
+/// [reversedChunks] and [currentLine] in-place.
 void handleLongWord(
   List<String> reversedChunks,
   List<String> currentLine,
@@ -45,6 +62,13 @@ void handleLongWord(
   }
 }
 
+/// Normalizes whitespace characters in text according to specified options.
+///
+/// This function can expand tabs to spaces and replace various whitespace
+/// characters (tab, newline, vertical tab, form feed, carriage return) with
+/// regular spaces.
+///
+/// Returns the normalized text string.
 String mungeWhitespace(
   String text, {
   bool expandTabs = true,
@@ -57,17 +81,23 @@ String mungeWhitespace(
 
   if (replaceWhitespace) {
     text = text.translate(const <int, int>{
-      9: 32,
-      10: 32,
-      11: 32,
-      12: 32,
-      13: 32,
+      9: 32, // tab -> space
+      10: 32, // newline -> space
+      11: 32, // vertical tab -> space
+      12: 32, // form feed -> space
+      13: 32, // carriage return -> space
     });
   }
 
   return text;
 }
 
+/// Splits text into chunks based on word boundaries and hyphenation rules.
+///
+/// This function breaks text at word separators, optionally preserving
+/// hyphenation points for better line breaking control.
+///
+/// Returns a list of text chunks.
 List<String> split(String text, {bool breakOnHyphens = true}) {
   List<String> chunks;
 
@@ -80,6 +110,12 @@ List<String> split(String text, {bool breakOnHyphens = true}) {
   return chunks;
 }
 
+/// Preprocesses text and splits it into chunks ready for wrapping.
+///
+/// This function combines whitespace normalization and text splitting into
+/// a single operation, preparing text for the wrapping algorithm.
+///
+/// Returns a list of preprocessed text chunks.
 List<String> splitChunks(
   String text, {
   bool expandTabs = true,
@@ -87,13 +123,27 @@ List<String> splitChunks(
   bool breakOnHyphens = true,
   int tabSize = 8,
 }) {
-  text = mungeWhitespace(text,
-      expandTabs: expandTabs,
-      replaceWhitespace: replaceWhitespace,
-      tabSize: tabSize);
+  text = mungeWhitespace(
+    text,
+    expandTabs: expandTabs,
+    replaceWhitespace: replaceWhitespace,
+    tabSize: tabSize,
+  );
+
   return split(text, breakOnHyphens: breakOnHyphens);
 }
 
+/// Core text wrapping algorithm that processes chunks into wrapped lines.
+///
+/// This is the main wrapping function that takes preprocessed text chunks
+/// and arranges them into lines that fit within the specified width. It
+/// handles indentation, long word breaking, whitespace management, and
+/// line limits with truncation.
+///
+/// Returns a list of wrapped lines.
+///
+/// Throws [RangeError] if width is negative.
+/// Throws [StateError] if placeholder is too large for the specified width.
 List<String> wrapChunks(
   List<String> chunks, {
   int width = 70,
@@ -106,7 +156,13 @@ List<String> wrapChunks(
   String placeholder = ' ...',
 }) {
   if (width < 0) {
-    throw Exception('Invalid width $width (must be > 0).');
+    throw RangeError.range(
+      width,
+      0,
+      null,
+      'width',
+      'Invalid width $width (must be > 0).',
+    );
   }
 
   var lines = <String>[];
@@ -144,8 +200,15 @@ List<String> wrapChunks(
     }
 
     if (chunks.isNotEmpty && chunks.last.length > contentWidth) {
-      handleLongWord(chunks, currentLine, currentLength, contentWidth,
-          breakLongWords: breakLongWords, breakOnHyphens: breakOnHyphens);
+      handleLongWord(
+        chunks,
+        currentLine,
+        currentLength,
+        contentWidth,
+        breakLongWords: breakLongWords,
+        breakOnHyphens: breakOnHyphens,
+      );
+
       currentLength = 0;
 
       for (var line in currentLine) {

@@ -1,6 +1,17 @@
-/// Extends [Pattern].
+/// Utility extensions for [Pattern] objects.
 extension PatternUtils on Pattern {
-  /// Split string by the occurrences of pattern.
+  /// Splits [text] by occurrences of this pattern, including captured groups.
+  ///
+  /// Returns a list containing the parts of [text] separated by matches of this
+  /// pattern. If the pattern contains capturing groups, the captured text is
+  /// also included in the result.
+  ///
+  /// Example:
+  /// ```dart
+  /// final pattern = RegExp(r'(\d+)');
+  /// final result = pattern.split('abc123def456ghi');
+  /// // Returns: ['abc', '123', 'def', '456', 'ghi']
+  /// ```
   List<String> split(String text) {
     var result = <String>[];
     var start = 0, end = 0;
@@ -27,9 +38,20 @@ extension PatternUtils on Pattern {
   }
 }
 
-/// Extends [String].
+/// Utility extensions for [String] objects.
 extension StringUtils on String {
-  /// Return a copy where all tab characters are expanded using spaces.
+  /// Returns a copy where all tab characters are expanded using spaces.
+  ///
+  /// Each tab character is replaced with enough spaces to reach the next tab
+  /// stop, which occurs every [tabSize] columns. The column position is reset
+  /// at the beginning of each line (after CR or LF characters).
+  ///
+  /// Example:
+  /// ```dart
+  /// final text = 'hello\tworld';
+  /// final expanded = text.expandTabs(4);
+  /// // Returns: 'hello    world' (assuming 'hello' is 5 chars, adds 3 spaces)
+  /// ```
   String expandTabs([int tabSize = 8]) {
     var buffer = StringBuffer();
     var units = runes.toList();
@@ -53,7 +75,18 @@ extension StringUtils on String {
     return buffer.toString();
   }
 
-  /// Replace each character in the string using the given translation table.
+  /// Replaces each character using the given translation [table].
+  ///
+  /// The [table] maps Unicode code points (integers) to replacement code points.
+  /// Characters not found in the table are left unchanged.
+  ///
+  /// Example:
+  /// ```dart
+  /// final text = 'hello';
+  /// final table = {104: 72, 101: 69}; // h→H, e→E
+  /// final result = text.translate(table);
+  /// // Returns: 'HEllo'
+  /// ```
   String translate(Map<int, int> table) {
     var buffer = StringBuffer();
 

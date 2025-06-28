@@ -1,19 +1,17 @@
 name: textwrap
-version: 2.0.0
+version: 2.0.1
 description: Text wrapping and filling. It's a pure port of textwrap from Python.
 repository: https://github.com/ykmnkmi/textwrap.dart
-funding:
-  - https://www.buymeacoffee.com/ykmnkmi
 
 topics:
   - text
 
 environment:
-  sdk: ">=3.0.0 <4.0.0"
+  sdk: ">=3.8.0 <4.0.0"
 
 dependencies:
-  meta: ^1.12.0
+  meta: ^1.17.0
 
 dev_dependencies:
-  lints: ^3.0.0
-  test: ^1.25.2
+  lints: ^6.0.0
+  test: ^1.26.2
