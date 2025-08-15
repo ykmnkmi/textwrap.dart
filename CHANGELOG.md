@@ -1,3 +1,8 @@
+## 2.0.2
+
+- Minimal SDK version: 3.9.0.
+- Refactoring.
+
 ## 2.0.1
 
 - Minimal SDK version: 3.8.0.
