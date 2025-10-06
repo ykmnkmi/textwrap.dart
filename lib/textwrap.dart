@@ -1,19 +1,365 @@
-import 'package:textwrap/src/functions.dart';
+import 'package:meta/meta.dart';
+import 'package:textwrap/src/extensions.dart';
 import 'package:textwrap/src/patterns.dart';
 
-/// Wraps a single paragraph of text to fit within specified line width.
+/// Class for wrapping/filling text.
 ///
-/// Returns a list of strings, each representing a wrapped line. The text is
-/// broken at word boundaries when possible, with various options for
-/// controlling the wrapping behavior.
+/// The base class consists of the [wrap] and [fill] methods; the other methods
+/// just there for subclasses to override in order to tweak the default
+/// behavior. If you want to completely replace the main wrapping algorithm,
+/// you will probably have to override [wrapChunks].
 ///
 /// Example:
 /// ```dart
-/// final lines = wrap(
-///   'This is a long line of text that needs wrapping',
-///   width: 20,
-/// );
-/// // Returns: ['This is a long line', 'of text that needs', 'wrapping']
+/// final wrapper = TextWrapper(width: 40, initialIndent: '  ');
+/// final wrapped = wrapper.fill('Long text to be wrapped');
+/// ```
+base class TextWrapper {
+  /// Creates a new instance with the specified configuration.
+  const TextWrapper({
+    this.width = 70,
+    this.initialIndent = '',
+    this.subsequentIndent = '',
+    this.expandTabs = true,
+    this.tabSize = 8,
+    this.replaceWhitespace = true,
+    this.fixSentenceEndings = false,
+    this.breakLongWords = true,
+    this.breakOnHyphens = true,
+    this.dropWhitespace = true,
+    this.maxLines = -1,
+    this.placeholder = ' ...',
+  });
+
+  /// The maximum width of wrapped lines, (unless [breakLongWords] is `false`).
+  final int width;
+
+  /// String that will be oreoended to the first line of wrapped output.
+  ///
+  /// Counts towards the line's width.
+  final String initialIndent;
+
+  /// String that will be prepended to all lines save the first of wrapped
+  /// output.
+  ///
+  /// Also counts towards each line's width.
+  final String subsequentIndent;
+
+  /// Expand tabs in input text to spaces before further processing.
+  ///
+  /// Each tab will become `0` .. [tabSize] spaces, depending on its position
+  /// in its line.
+  ///
+  /// If `false`, each tab is treated as a single character.
+  final bool expandTabs;
+
+  /// Expand tabs in input text to spaces before further processing.
+  ///
+  /// Each tab will become `0` .. [tabSize] spaces, depending on its position.
+  final int tabSize;
+
+  /// Replace all whitespace characters in the input text by spaces after tab
+  /// expansion.
+  ///
+  /// Note that if [expandTabs] is `false` and [replaceWhitespace] is `true`,
+  /// every tab will be converted to a single space!
+  final bool replaceWhitespace;
+
+  /// Ensure that sentence-ending punctuation is always followed by two spaces.
+  /// Off by default because the algorithm is (unavoidably) imperfect.
+  final bool fixSentenceEndings;
+
+  /// Break words longer than [width].
+  ///
+  /// If `false`, those words will not be broken, and some lines might be longer
+  /// than [width].
+  final bool breakLongWords;
+
+  /// Allow breaking hyphenated words.
+  ///
+  /// If `true`, wrapping will occur preferably on whitespaces and right after
+  /// hyphens part of compound words.
+  final bool breakOnHyphens;
+
+  /// Drop leading and trailing whitespace from lines.
+  final bool dropWhitespace;
+
+  /// Truncate wrapped lines.
+  ///
+  /// `-1` for no limit.
+  final int maxLines;
+
+  /// Append to the last line of truncated text.
+  final String placeholder;
+
+  /// Munge whitespace in text: expand tabs and convert all other whitespace
+  /// characters to spaces.
+  ///
+  /// Eg. " foo\\tbar\\n\\nbaz" becomes " foo    bar  baz".
+  @visibleForOverriding
+  String mungeWhitespace(String text) {
+    if (expandTabs) {
+      text = text.expandTabs(tabSize);
+    }
+
+    if (replaceWhitespace) {
+      text = text.translate(const <int, int>{
+        9: 32, // tab -> space
+        10: 32, // newline -> space
+        11: 32, // vertical tab -> space
+        12: 32, // form feed -> space
+        13: 32, // carriage return -> space
+      });
+    }
+
+    return text;
+  }
+
+  /// Split the text to wrap into indivisible chunks.
+  /// Chunks are not quite the same as words; see [wrapChunks] for full details.
+  ///
+  /// As an example, the text
+  /// ```text
+  /// Look, goof-ball -- use the -b option!
+  /// ```
+  /// breaks into the following chunks:
+  /// ```
+  /// 'Look,', ' ', 'goof-', 'ball', ' ', '--', ' ',
+  /// 'use', ' ', 'the', ' ', '-b', ' ', 'option!'
+  /// ```
+  /// if [breakOnHyphens] is `true`, or in:
+  /// ```
+  /// 'Look,', ' ', 'goof-ball', ' ', '--', ' ',
+  /// 'use', ' ', 'the', ' ', '-b', ' ', option!'
+  /// ```
+  /// otherwise.
+  @visibleForOverriding
+  List<String> split(String text) {
+    List<String> chunks;
+
+    if (breakOnHyphens) {
+      chunks = wordSeparatorRe.split(text);
+    } else {
+      chunks = wordSeparatorSimpleRe.split(text);
+    }
+
+    return chunks;
+  }
+
+  /// Correct for sentence endings buried in [chunks].
+  ///
+  /// Eg. when the original text contains `'... foo.\\nBar ...'`,
+  /// [mungeWhitespace] and [split] will convert that to
+  /// `[..., 'foo.', ' ', 'Bar', ...]` which has one too few spaces; this
+  /// method simply changes the one space to two.
+  @visibleForOverriding
+  void fixEndings(List<String> chunks) {
+    for (var i = 0; i < chunks.length - 1;) {
+      var chunk = chunks[i];
+      var length = chunk.length;
+      var input = length > 2 ? chunk.substring(length - 2) : chunk;
+
+      if (chunks[i + 1] == ' ' && sentenceEndRe.hasMatch(input)) {
+        chunks[i + 1] = '  ';
+        i += 2;
+      } else {
+        i += 1;
+      }
+    }
+  }
+
+  /// Handle a chunk of text (most likely a word, not whitespace) that is too
+  /// long to fit in any line.
+  @visibleForOverriding
+  void handleLongWord(
+    List<String> reversedChunks,
+    List<String> currentLine,
+    int currentLength,
+    int width,
+  ) {
+    var spaceLeft = width < 1 ? 1 : width - currentLength;
+
+    if (breakLongWords) {
+      var chunk = reversedChunks.last;
+      var end = spaceLeft;
+
+      if (breakOnHyphens && chunk.length > spaceLeft) {
+        var hyphen = chunk.lastIndexOf('-');
+
+        if (hyphen > 0 && chunk.substring(0, hyphen).contains('-')) {
+          end = hyphen + 1;
+        }
+      }
+
+      currentLine.add(chunk.substring(0, end));
+      reversedChunks[reversedChunks.length - 1] = chunk.substring(end);
+    } else if (currentLine.isEmpty) {
+      currentLine.add(reversedChunks.removeLast());
+    }
+  }
+
+  /// Wrap a sequence of text chunks and return a list of lines of length
+  /// [width] or less.
+  ///
+  /// If [breakLongWords] is `false`, some lines may be longer than this.
+  ///
+  /// Chunks correspond roughly to words and the whitespace between them: each
+  /// chunk is indivisible (modulo 'breakLongWords'), but a line break can come
+  /// between any two chunks.
+  ///
+  /// Chunks should not have internal whitespace; ie. a chunk is either all
+  /// whitespace or a 'word'. Whitespace chunks will be removed from the
+  /// beginning and end of lines, but apart from that whitespace is preserved.
+  ///
+  /// Throws [RangeError] if width is negative.
+  /// Throws [StateError] if placeholder is too large for the specified width.
+  @visibleForOverriding
+  List<String> wrapChunks(List<String> chunks) {
+    if (width < 0) {
+      throw RangeError.range(
+        width,
+        0,
+        null,
+        'width',
+        'Invalid width $width (must be > 0).',
+      );
+    }
+
+    var lines = <String>[];
+
+    if (maxLines != -1) {
+      var indent = maxLines > 1 ? subsequentIndent : initialIndent;
+
+      if (indent.length + placeholder.trimLeft().length > width) {
+        throw StateError('Placeholder too large for max width.');
+      }
+    }
+
+    chunks = chunks.reversed.toList();
+
+    while (chunks.isNotEmpty) {
+      var currentLine = <String>[];
+      var currentLength = 0;
+
+      var indent = lines.isNotEmpty ? subsequentIndent : initialIndent;
+      var contentWidth = width - indent.length;
+
+      if (dropWhitespace && chunks.last.trim().isEmpty && lines.isNotEmpty) {
+        chunks.removeLast();
+      }
+
+      while (chunks.isNotEmpty) {
+        var length = chunks.last.length;
+
+        if (currentLength + length <= contentWidth) {
+          currentLine.add(chunks.removeLast());
+          currentLength += length;
+        } else {
+          break;
+        }
+      }
+
+      if (chunks.isNotEmpty && chunks.last.length > contentWidth) {
+        handleLongWord(chunks, currentLine, currentLength, contentWidth);
+        currentLength = 0;
+
+        for (var i = 0; i < currentLine.length; i += 1) {
+          currentLength += currentLine[i].length;
+        }
+      }
+
+      if (dropWhitespace &&
+          currentLine.isNotEmpty &&
+          currentLine.last.trim().isEmpty) {
+        var last = currentLine.removeLast();
+        currentLength -= last.length;
+      }
+
+      if (currentLine.isNotEmpty) {
+        if (maxLines == -1 ||
+            lines.length + 1 < maxLines ||
+            (chunks.isEmpty ||
+                    dropWhitespace &&
+                        chunks.length == 1 &&
+                        chunks.first.trim().isEmpty) &&
+                currentLength <= width) {
+          lines.add(indent + currentLine.join());
+        } else {
+          var not = true;
+
+          while (currentLine.isNotEmpty) {
+            if (currentLine.last.trim().isNotEmpty &&
+                currentLength + placeholder.length <= contentWidth) {
+              currentLine.add(placeholder);
+              lines.add(indent + currentLine.join());
+              not = false;
+              break;
+            }
+
+            var last = currentLine.removeLast();
+            currentLength -= last.length;
+          }
+
+          if (not) {
+            if (lines.isNotEmpty) {
+              var previousLine = lines.last.trimRight();
+
+              if (previousLine.length + placeholder.length <= contentWidth) {
+                lines[lines.length - 1] = previousLine + placeholder;
+              }
+
+              lines.add(indent + placeholder.trimLeft());
+            }
+          }
+
+          break;
+        }
+      }
+    }
+
+    return lines;
+  }
+
+  @visibleForOverriding
+  List<String> splitChunks(String text) {
+    return split(mungeWhitespace(text));
+  }
+
+  /// Reformat the single paragraph in [text] so it fits in lines of no more
+  /// than [width] columns, and return a list of wrapped lines.
+  ///
+  /// Tabs in [text] are expanded with [StringUtils.expandTabs], and all other
+  /// whitespace characters (including newline) are converted to space.
+  List<String> wrap(String text) {
+    var chunks = splitChunks(text);
+
+    if (fixSentenceEndings) {
+      fixEndings(chunks);
+    }
+
+    return wrapChunks(chunks);
+  }
+
+  /// Reformat the single paragraph in [text] to fit in lines of no more than
+  /// [width] columns, and return a new string containing the entire wrapped
+  /// paragraph.
+  String fill(String text) {
+    return wrap(text).join('\n');
+  }
+}
+
+/// Wrap a single paragraph of text, returning a list of wrapped lines.
+///
+/// Reformat the single paragraph in [text] so it fits in lines of no more than
+/// [width] columns, and return a list of wrapped lines.
+///
+/// By default, tabs in [text] are expanded with [StringUtils.expandTabs], and
+/// all other whitespace characters (including newline) are converted to space.
+///
+/// Example:
+/// ```dart
+/// wrap('This is a long line of text that needs wrapping', width: 20);
+/// // ['This is a long line', 'of text that needs', 'wrapping']
 /// ```
 List<String> wrap(
   String text, {
@@ -21,49 +367,44 @@ List<String> wrap(
   String initialIndent = '',
   String subsequentIndent = '',
   bool expandTabs = true,
+  int tabSize = 8,
   bool replaceWhitespace = true,
   bool fixSentenceEndings = false,
   bool breakLongWords = true,
-  bool dropWhitespace = true,
   bool breakOnHyphens = true,
-  int tabSize = 8,
+  bool dropWhitespace = true,
   int maxLines = -1,
-  String placeholder = '...',
+  String placeholder = ' ...',
 }) {
-  var chunks = splitChunks(
-    text,
-    breakOnHyphens: breakLongWords,
-    expandTabs: expandTabs,
-    tabSize: tabSize,
-    replaceWhitespace: replaceWhitespace,
-  );
-
-  if (fixSentenceEndings) {
-    fixEndings(chunks);
-  }
-
-  return wrapChunks(
-    chunks,
+  return TextWrapper(
     width: width,
     initialIndent: initialIndent,
     subsequentIndent: subsequentIndent,
+    expandTabs: expandTabs,
+    tabSize: tabSize,
+    replaceWhitespace: replaceWhitespace,
+    fixSentenceEndings: fixSentenceEndings,
     breakLongWords: breakLongWords,
-    dropWhitespace: dropWhitespace,
     breakOnHyphens: breakOnHyphens,
+    dropWhitespace: dropWhitespace,
     maxLines: maxLines,
     placeholder: placeholder,
-  );
+  ).wrap(text);
 }
 
-/// Wraps a single paragraph of text and returns it as a single string.
+/// Fill a single paragraph of text, returning a new string.
 ///
-/// This is a convenience function that calls [wrap] and joins the resulting
-/// lines with newline characters.
+/// Reformat the single paragraph in [text] to fit in lines of no more than
+/// [width] columns, and return a new string containing the entire wrapped
+/// paragraph.
+///
+/// As with [wrap], tabs are expanded and other whitespace characters converted
+/// to space.
 ///
 /// Example:
 /// ```dart
-/// final wrapped = fill('This is a long line of text', width: 20);
-/// // Returns: 'This is a long line\nof text'
+/// fill('This is a long line of text', width: 20);
+/// // 'This is a long line\nof text'
 /// ```
 String fill(
   String text, {
@@ -71,42 +412,41 @@ String fill(
   String initialIndent = '',
   String subsequentIndent = '',
   bool expandTabs = true,
+  int tabSize = 8,
   bool replaceWhitespace = true,
   bool fixSentenceEndings = false,
   bool breakLongWords = true,
-  bool dropWhitespace = true,
   bool breakOnHyphens = true,
-  int tabSize = 8,
+  bool dropWhitespace = true,
   int maxLines = -1,
-  String placeholder = '...',
+  String placeholder = ' ...',
 }) {
-  return wrap(
-    text,
+  return TextWrapper(
     width: width,
     initialIndent: initialIndent,
     subsequentIndent: subsequentIndent,
     expandTabs: expandTabs,
+    tabSize: tabSize,
     replaceWhitespace: replaceWhitespace,
     fixSentenceEndings: fixSentenceEndings,
     breakLongWords: breakLongWords,
-    dropWhitespace: dropWhitespace,
     breakOnHyphens: breakOnHyphens,
-    tabSize: tabSize,
+    dropWhitespace: dropWhitespace,
     maxLines: maxLines,
     placeholder: placeholder,
-  ).join('\n');
+  ).fill(text);
 }
 
-/// Collapses whitespace and truncates text to fit within specified width.
+/// Collapse and truncate the given text to fit in the given width.
 ///
-/// This function first normalizes whitespace by collapsing multiple spaces
-/// into single spaces, then wraps the text. It's useful for creating
-/// abbreviated versions of text that fit in limited space.
-///
-/// Example:
+/// The text first has its whitespace collapsed.  If it then fits in the
+/// [width], it is returned as is. Otherwise, as many words as possible are
+/// joined and then the placeholder is appended:
 /// ```dart
-/// final short = shorten('This    has   multiple    spaces', 15);
-/// // Returns: 'This has ...'
+/// shorten('Hello  world!', width: 12)
+/// // 'Hello world!'
+/// shorten('Hello  world!', width: 11)
+/// // 'Hello ...'
 /// ```
 String shorten(
   String text,
@@ -124,7 +464,7 @@ String shorten(
   String placeholder = ' ...',
 }) {
   return fill(
-    text.split(spaceRe).join(' '),
+    text.trim().split(spaceRe).join(' '),
     width: width,
     initialIndent: initialIndent,
     subsequentIndent: subsequentIndent,
@@ -138,106 +478,4 @@ String shorten(
     maxLines: maxLines,
     placeholder: placeholder,
   );
-}
-
-/// A configurable text wrapper that provides object-oriented text wrapping.
-///
-/// This class allows you to configure text wrapping options once and then
-/// apply them to multiple texts. All wrapping behavior is controlled through
-/// constructor parameters.
-///
-/// Example:
-/// ```dart
-/// final wrapper = TextWrapper(width: 40, initialIndent: '  ');
-/// final wrapped = wrapper.fill('Long text to be wrapped');
-/// ```
-class TextWrapper {
-  /// Creates a new TextWrapper with the specified configuration.
-  TextWrapper({
-    this.width = 70,
-    this.initialIndent = '',
-    this.subsequentIndent = '',
-    this.expandTabs = true,
-    this.replaceWhitespace = true,
-    this.fixSentenceEndings = false,
-    this.breakLongWords = true,
-    this.dropWhitespace = true,
-    this.breakOnHyphens = true,
-    this.tabSize = 8,
-    this.maxLines = -1,
-    this.placeholder = ' ...',
-  });
-
-  /// The maximum width of wrapped lines (default: 70).
-  final int width;
-
-  /// String to prepend to the first line of wrapped output.
-  final String initialIndent;
-
-  /// String to prepend to all lines of wrapped output except the first.
-  final String subsequentIndent;
-
-  /// Whether to expand tabs to spaces before wrapping.
-  final bool expandTabs;
-
-  /// Whether to replace whitespace characters with spaces.
-  final bool replaceWhitespace;
-
-  /// Whether to fix sentence endings with proper spacing.
-  final bool fixSentenceEndings;
-
-  /// Whether to break words longer than [width].
-  final bool breakLongWords;
-
-  /// Whether to drop leading and trailing whitespace from lines.
-  final bool dropWhitespace;
-
-  /// Whether to break on hyphens in compound words.
-  final bool breakOnHyphens;
-
-  /// Number of spaces to use when expanding tabs.
-  final int tabSize;
-
-  /// Maximum number of lines to output (-1 for no limit).
-  final int maxLines;
-
-  /// String to append when text is truncated due to [maxLines].
-  final String placeholder;
-
-  /// Wraps the given [text] and returns a list of wrapped lines.
-  ///
-  /// Uses the configuration specified in the constructor to wrap the text.
-  List<String> wrap(String text) {
-    var chunks = splitChunks(
-      text,
-      breakOnHyphens: breakLongWords,
-      expandTabs: expandTabs,
-      tabSize: tabSize,
-      replaceWhitespace: replaceWhitespace,
-    );
-
-    if (fixSentenceEndings) {
-      fixEndings(chunks);
-    }
-
-    return wrapChunks(
-      chunks,
-      width: width,
-      initialIndent: initialIndent,
-      subsequentIndent: subsequentIndent,
-      breakLongWords: breakLongWords,
-      dropWhitespace: dropWhitespace,
-      breakOnHyphens: breakOnHyphens,
-      maxLines: maxLines,
-      placeholder: placeholder,
-    );
-  }
-
-  /// Wraps the given [text] and returns it as a single string.
-  ///
-  /// This is equivalent to calling [wrap] and joining the result with
-  /// newline characters.
-  String fill(String text) {
-    return wrap(text).join('\n');
-  }
 }

@@ -1,3 +1,9 @@
+## 2.1.0
+
+- `TextWrapper` can now be constant and tweaked by subclasses.
+- Update documentation comments.
+- Refactoring.
+
 ## 2.0.2
 
 - Minimal SDK version: 3.9.0.

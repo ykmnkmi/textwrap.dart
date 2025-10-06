@@ -4,7 +4,9 @@
 [![Test Status][test_ci_icon]][test_ci]
 [![CodeCov][codecov_icon]][codecov]
 
-A Dart library for intelligent text wrapping and filling. This is a pure port of Python's [textwrap module][textwrap], providing powerful text formatting utilities for console applications, documentation generation, and formatted output.
+A Dart library for intelligent text wrapping and filling. This is a pure port
+of Python's [textwrap module][textwrap], providing powerful text formatting
+utilities for console applications, documentation generation, and formatted output.
 
 ## Features
 
@@ -21,7 +23,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  textwrap: ^1.0.0
+  textwrap: ^2.1.0
 ```
 
 Then run:
@@ -49,7 +51,7 @@ void main() {
 }
 ```
 
-### Advanced Options
+### Advanced options
 
 ```dart
 import 'package:textwrap/textwrap.dart';
@@ -63,6 +65,7 @@ void main() {
     initialIndent: '>>> ',
     subsequentIndent: '    '
   ));
+
   // Output:
   // >>> This is a long paragraph
   //     that needs to be wrapped
@@ -74,10 +77,16 @@ void main() {
   for (final line in lines) {
     print('| $line');
   }
+
+  // Output:
+  // | This is a long
+  // | paragraph that needs
+  // | to be wrapped
+  // | nicely.
 }
 ```
 
-### Using TextWrapper class
+### Using `TextWrapper` class
 
 For repeated text wrapping with the same configuration, use the `TextWrapper` class:
 
@@ -86,7 +95,7 @@ import 'package:textwrap/textwrap.dart';
 
 void main() {
   // Create a reusable wrapper with specific settings
-  final wrapper = TextWrapper(
+  const wrapper = TextWrapper(
     width: 40,
     initialIndent: '  ',
     subsequentIndent: '    ',
@@ -97,13 +106,22 @@ void main() {
   print(wrapper.fill('First paragraph to be wrapped with consistent formatting.'));
   print('');
   print(wrapper.fill('Second paragraph with the same indentation and width settings.'));
+  // Output:
+  //   First paragraph to be wrapped with
+  //     consistent formatting.
+  //
+  //   Second paragraph with the same
+  //     indentation and width settings.
 
   // Get lines as a list
   final lines = wrapper.wrap('Third paragraph for line-by-line processing.');
+  print(lines);
+  // Output:
+  // [  Third paragraph for line-by-line,     processing.]
 }
 ```
 
-### Text Shortening
+### Text shortening
 
 ```dart
 import 'package:textwrap/textwrap.dart';
@@ -121,22 +139,9 @@ void main() {
 }
 ```
 
-### Working with Code and Preformatted Text
-
-```dart
-final code = '''
-def hello_world():
-    print("Hello, World!")
-    return True
-''';
-
-// Preserve indentation while wrapping
-print(fill(code, width: 25, expandTabs: false));
-```
-
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+Contributions are welcome! Please feel free to submit a pull request. For major changes, please open an issue first to discuss what you would like to change.
 
 ## License
 
