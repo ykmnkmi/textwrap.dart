@@ -97,6 +97,7 @@ base class TextWrapper {
   ///
   /// Eg. " foo\\tbar\\n\\nbaz" becomes " foo    bar  baz".
   @visibleForOverriding
+  @visibleForTesting
   String mungeWhitespace(String text) {
     if (expandTabs) {
       text = text.expandTabs(tabSize);
@@ -134,6 +135,7 @@ base class TextWrapper {
   /// ```
   /// otherwise.
   @visibleForOverriding
+  @visibleForTesting
   List<String> split(String text) {
     List<String> chunks;
 
@@ -153,6 +155,7 @@ base class TextWrapper {
   /// `[..., 'foo.', ' ', 'Bar', ...]` which has one too few spaces; this
   /// method simply changes the one space to two.
   @visibleForOverriding
+  @visibleForTesting
   void fixEndings(List<String> chunks) {
     for (var i = 0; i < chunks.length - 1;) {
       var chunk = chunks[i];
@@ -171,16 +174,18 @@ base class TextWrapper {
   /// Handle a chunk of text (most likely a word, not whitespace) that is too
   /// long to fit in any line.
   @visibleForOverriding
+  @visibleForTesting
   void handleLongWord(
-    List<String> reversedChunks,
-    List<String> currentLine,
-    int currentLength,
     int width,
+    int chunkIndex,
+    List<String> chunks,
+    int currentLength,
+    List<String> currentLine,
   ) {
     var spaceLeft = width < 1 ? 1 : width - currentLength;
 
     if (breakLongWords) {
-      var chunk = reversedChunks.last;
+      var chunk = chunks[chunkIndex];
       var end = spaceLeft;
 
       if (breakOnHyphens && chunk.length > spaceLeft) {
@@ -192,9 +197,10 @@ base class TextWrapper {
       }
 
       currentLine.add(chunk.substring(0, end));
-      reversedChunks[reversedChunks.length - 1] = chunk.substring(end);
+      chunks[chunkIndex] = chunk.substring(end);
     } else if (currentLine.isEmpty) {
-      currentLine.add(reversedChunks.removeLast());
+      currentLine.add(chunks[chunkIndex]);
+      chunks[chunkIndex] = ''; // Mark as processed
     }
   }
 
@@ -214,6 +220,7 @@ base class TextWrapper {
   /// Throws [RangeError] if width is negative.
   /// Throws [StateError] if placeholder is too large for the specified width.
   @visibleForOverriding
+  @visibleForTesting
   List<String> wrapChunks(List<String> chunks) {
     if (width < 0) {
       throw RangeError.range(
@@ -226,6 +233,7 @@ base class TextWrapper {
     }
 
     var lines = <String>[];
+    var chunkIndex = 0;
 
     if (maxLines != -1) {
       var indent = maxLines > 1 ? subsequentIndent : initialIndent;
@@ -235,36 +243,50 @@ base class TextWrapper {
       }
     }
 
-    chunks = chunks.reversed.toList();
-
-    while (chunks.isNotEmpty) {
+    while (chunkIndex < chunks.length) {
       var currentLine = <String>[];
       var currentLength = 0;
 
       var indent = lines.isNotEmpty ? subsequentIndent : initialIndent;
       var contentWidth = width - indent.length;
 
-      if (dropWhitespace && chunks.last.trim().isEmpty && lines.isNotEmpty) {
-        chunks.removeLast();
+      if (dropWhitespace &&
+          chunks[chunkIndex].trim().isEmpty &&
+          lines.isNotEmpty) {
+        chunkIndex++;
+        continue;
       }
 
-      while (chunks.isNotEmpty) {
-        var length = chunks.last.length;
+      while (chunkIndex < chunks.length) {
+        var length = chunks[chunkIndex].length;
 
         if (currentLength + length <= contentWidth) {
-          currentLine.add(chunks.removeLast());
+          currentLine.add(chunks[chunkIndex]);
           currentLength += length;
+          chunkIndex++;
         } else {
           break;
         }
       }
 
-      if (chunks.isNotEmpty && chunks.last.length > contentWidth) {
-        handleLongWord(chunks, currentLine, currentLength, contentWidth);
+      if (chunkIndex < chunks.length &&
+          chunks[chunkIndex].length > contentWidth) {
+        handleLongWord(
+          contentWidth,
+          chunkIndex,
+          chunks,
+          currentLength,
+          currentLine,
+        );
+
         currentLength = 0;
 
         for (var i = 0; i < currentLine.length; i += 1) {
           currentLength += currentLine[i].length;
+        }
+
+        if (chunks[chunkIndex].isEmpty) {
+          chunkIndex++; // Move past processed chunk
         }
       }
 
@@ -278,10 +300,10 @@ base class TextWrapper {
       if (currentLine.isNotEmpty) {
         if (maxLines == -1 ||
             lines.length + 1 < maxLines ||
-            (chunks.isEmpty ||
+            (chunkIndex >= chunks.length ||
                     dropWhitespace &&
-                        chunks.length == 1 &&
-                        chunks.first.trim().isEmpty) &&
+                        chunkIndex + 1 == chunks.length &&
+                        chunks[chunkIndex].trim().isEmpty) &&
                 currentLength <= width) {
           lines.add(indent + currentLine.join());
         } else {
@@ -310,9 +332,8 @@ base class TextWrapper {
 
               lines.add(indent + placeholder.trimLeft());
             }
+            break;
           }
-
-          break;
         }
       }
     }
@@ -321,6 +342,7 @@ base class TextWrapper {
   }
 
   @visibleForOverriding
+  @visibleForTesting
   List<String> splitChunks(String text) {
     return split(mungeWhitespace(text));
   }
@@ -464,7 +486,7 @@ String shorten(
   String placeholder = ' ...',
 }) {
   return fill(
-    text.trim().split(spaceRe).join(' '),
+    text.split(spaceRe).join(' '),
     width: width,
     initialIndent: initialIndent,
     subsequentIndent: subsequentIndent,
