@@ -1,6 +1,7 @@
 import 'package:meta/meta.dart';
-import 'package:textwrap/src/extensions.dart';
-import 'package:textwrap/src/patterns.dart';
+import 'package:textwrap/utils.dart';
+
+part 'src/patterns.dart';
 
 /// Class for wrapping/filling text.
 ///
@@ -140,9 +141,9 @@ base class TextWrapper {
     List<String> chunks;
 
     if (breakOnHyphens) {
-      chunks = wordSeparatorRe.split(text);
+      chunks = _wordSeparatorRe.split(text);
     } else {
-      chunks = wordSeparatorSimpleRe.split(text);
+      chunks = _wordSeparatorSimpleRe.split(text);
     }
 
     return chunks;
@@ -157,12 +158,10 @@ base class TextWrapper {
   @visibleForOverriding
   @visibleForTesting
   void fixEndings(List<String> chunks) {
-    for (var i = 0; i < chunks.length - 1;) {
-      var chunk = chunks[i];
-      var length = chunk.length;
-      var input = length > 2 ? chunk.substring(length - 2) : chunk;
+    var i = 0;
 
-      if (chunks[i + 1] == ' ' && sentenceEndRe.hasMatch(input)) {
+    while (i < chunks.length - 1) {
+      if (chunks[i + 1] == ' ' && _sentenceEndRe.hasMatch(chunks[i])) {
         chunks[i + 1] = '  ';
         i += 2;
       } else {
@@ -189,9 +188,9 @@ base class TextWrapper {
       var end = spaceLeft;
 
       if (breakOnHyphens && chunk.length > spaceLeft) {
-        var hyphen = chunk.lastIndexOf('-');
+        var hyphen = chunk.substring(0, spaceLeft).lastIndexOf('-');
 
-        if (hyphen > 0 && chunk.substring(0, hyphen).contains('-')) {
+        if (hyphen > 0 && chunk[hyphen - 1] != '-') {
           end = hyphen + 1;
         }
       }
@@ -217,23 +216,18 @@ base class TextWrapper {
   /// whitespace or a 'word'. Whitespace chunks will be removed from the
   /// beginning and end of lines, but apart from that whitespace is preserved.
   ///
-  /// Throws [RangeError] if width is negative.
+  /// Throws [ArgumentError] if width is less than `1`.
   /// Throws [StateError] if placeholder is too large for the specified width.
   @visibleForOverriding
   @visibleForTesting
   List<String> wrapChunks(List<String> chunks) {
-    if (width < 0) {
-      throw RangeError.range(
+    if (width < 1) {
+      throw ArgumentError.value(
         width,
-        0,
-        null,
         'width',
         'Invalid width $width (must be > 0).',
       );
     }
-
-    var lines = <String>[];
-    var chunkIndex = 0;
 
     if (maxLines != -1) {
       var indent = maxLines > 1 ? subsequentIndent : initialIndent;
@@ -242,6 +236,10 @@ base class TextWrapper {
         throw StateError('Placeholder too large for max width.');
       }
     }
+
+    var lines = <String>[];
+
+    var chunkIndex = 0;
 
     while (chunkIndex < chunks.length) {
       var currentLine = <String>[];
@@ -253,7 +251,7 @@ base class TextWrapper {
       if (dropWhitespace &&
           chunks[chunkIndex].trim().isEmpty &&
           lines.isNotEmpty) {
-        chunkIndex++;
+        chunkIndex += 1;
         continue;
       }
 
@@ -263,7 +261,7 @@ base class TextWrapper {
         if (currentLength + length <= contentWidth) {
           currentLine.add(chunks[chunkIndex]);
           currentLength += length;
-          chunkIndex++;
+          chunkIndex += 1;
         } else {
           break;
         }
@@ -286,7 +284,7 @@ base class TextWrapper {
         }
 
         if (chunks[chunkIndex].isEmpty) {
-          chunkIndex++; // Move past processed chunk
+          chunkIndex += 1;
         }
       }
 
@@ -307,14 +305,14 @@ base class TextWrapper {
                 currentLength <= width) {
           lines.add(indent + currentLine.join());
         } else {
-          var not = true;
+          var whileElse = true;
 
           while (currentLine.isNotEmpty) {
             if (currentLine.last.trim().isNotEmpty &&
                 currentLength + placeholder.length <= contentWidth) {
               currentLine.add(placeholder);
               lines.add(indent + currentLine.join());
-              not = false;
+              whileElse = false;
               break;
             }
 
@@ -322,18 +320,20 @@ base class TextWrapper {
             currentLength -= last.length;
           }
 
-          if (not) {
+          if (whileElse) {
             if (lines.isNotEmpty) {
               var previousLine = lines.last.trimRight();
 
               if (previousLine.length + placeholder.length <= contentWidth) {
                 lines[lines.length - 1] = previousLine + placeholder;
+                break;
               }
-
-              lines.add(indent + placeholder.trimLeft());
             }
-            break;
+
+            lines.add(indent + placeholder.trimLeft());
           }
+
+          break;
         }
       }
     }
@@ -486,7 +486,7 @@ String shorten(
   String placeholder = ' ...',
 }) {
   return fill(
-    text.split(spaceRe).join(' '),
+    _spaceRe.split(text.trim()).join(' '),
     width: width,
     initialIndent: initialIndent,
     subsequentIndent: subsequentIndent,
