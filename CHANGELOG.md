@@ -1,8 +1,8 @@
 ## 2.1.0
 
-- `TextWrapper` can now be constant and tweaked by subclasses.
+- `TextWrapper` can now be a constant, customizable by subclasses..
 - Update documentation comments.
-- Refactoring.
+- Refactoring to align with Python implementation.
 
 ## 2.0.2
 

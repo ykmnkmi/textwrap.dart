@@ -44,8 +44,7 @@ void main() {
   print(fill('Text wrapping and filling with intelligent line breaks.', width: 16));
   // Output:
   // Text wrapping
-  // and filling
-  // with
+  // and filling with
   // intelligent line
   // breaks.
 }
@@ -107,11 +106,11 @@ void main() {
   print('');
   print(wrapper.fill('Second paragraph with the same indentation and width settings.'));
   // Output:
-  //   First paragraph to be wrapped with
-  //     consistent formatting.
+  //  First paragraph to be wrapped with
+  //    consistent formatting.
   //
-  //   Second paragraph with the same
-  //     indentation and width settings.
+  //  Second paragraph with the same
+  //    indentation and width settings.
 
   // Get lines as a list
   final lines = wrapper.wrap('Third paragraph for line-by-line processing.');
