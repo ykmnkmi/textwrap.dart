@@ -1,5 +1,5 @@
 name: textwrap
-version: 2.1.0
+version: 2.2.0
 description: Text wrapping and filling. It's a pure port of textwrap from Python.
 repository: https://github.com/ykmnkmi/textwrap.dart
 

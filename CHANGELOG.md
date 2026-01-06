@@ -1,3 +1,9 @@
+## 2.2.0
+
+- **Deprecated**: `inclideEmptyStrings` in `PatternUtils.split`. Use `includeEmptyStrings` instead.
+- **Breaking**: `StringUtils.expandTabs` removes tabs when `tabSize` is 0. Throws `ArgumentError` if `tabSize` is negative.
+- Improved test coverage.
+
 ## 2.1.0
 
 - `TextWrapper` can now be a constant, customizable by subclasses..

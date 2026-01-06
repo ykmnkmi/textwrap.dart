@@ -12,19 +12,27 @@ extension PatternUtils on Pattern {
   /// final result = pattern.split('abc123def456ghi');
   /// // Returns: ['abc', '123', 'def', '456', 'ghi']
   /// ```
-  List<String> split(String text, {bool inclideEmptyStrings = false}) {
-    if (this is! RegExp) {
+  List<String> split(
+    String text, {
+    bool includeEmptyStrings = false,
+    @Deprecated('Use includeEmptyStrings instead.')
+    bool inclideEmptyStrings = false,
+  }) {
+    var pattern = this;
+
+    if (pattern is! RegExp) {
       return text.split(this);
     }
 
-    var regEx = this as RegExp;
+    includeEmptyStrings |= inclideEmptyStrings;
+
     var result = <String>[];
     var start = 0, end = 0;
 
-    for (var match in regEx.allMatches(text)) {
+    for (var match in pattern.allMatches(text)) {
       end = match.start;
 
-      if (inclideEmptyStrings || start < end) {
+      if (includeEmptyStrings || start < end) {
         result.add(text.substring(start, end));
       }
 
@@ -35,7 +43,7 @@ extension PatternUtils on Pattern {
       start = match.end;
     }
 
-    if (inclideEmptyStrings || start < text.length) {
+    if (includeEmptyStrings || start < text.length) {
       result.add(text.substring(start));
     }
 
@@ -48,8 +56,10 @@ extension StringUtils on String {
   /// Returns a copy where all tab characters are expanded using spaces.
   ///
   /// Each tab character is replaced with enough spaces to reach the next tab
-  /// stop, which occurs every [tabSize] columns. The column position is reset
-  /// at the beginning of each line (after CR or LF characters).
+  /// stop, which occurs every [tabSize] columns. If [tabSize] is 0, tab
+  /// characters are removed. If [tabSize] is negative, an [ArgumentError] is
+  /// thrown. The column position is reset at the beginning of each line (after
+  /// CR or LF characters).
   ///
   /// Example:
   /// ```dart
@@ -58,6 +68,10 @@ extension StringUtils on String {
   /// // Returns: 'hello    world' (assuming 'hello' is 5 chars, adds 3 spaces)
   /// ```
   String expandTabs([int tabSize = 8]) {
+    if (tabSize < 0) {
+      throw ArgumentError.value(tabSize, 'tabSize', 'must be non-negative');
+    }
+
     var buffer = StringBuffer();
     var units = runes.toList();
     var length = units.length;
@@ -69,9 +83,11 @@ extension StringUtils on String {
         line = -1;
         buffer.writeCharCode(char);
       } else if (char == 9) {
-        var size = tabSize - (line % tabSize);
-        buffer.write(' ' * size);
-        line = -1;
+        if (tabSize > 0) {
+          var size = tabSize - (line % tabSize);
+          buffer.write(' ' * size);
+          line = -1;
+        }
       } else {
         buffer.writeCharCode(char);
       }
